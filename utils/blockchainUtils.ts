@@ -48,7 +48,7 @@ export const calculateSpeed = (position: number, confirmationTime: number): numb
   
   // For cars still on the track, scale the speed based on position
   const baseSpeed = confirmationTime === 200 ? 180 : 90; // Base speeds
-  return baseSpeed * (position / 100) + 20; // Scale with a minimum value
+  return Math.max(20, (baseSpeed * position / 100)); // Scale with a minimum value
 };
 
 // Convert milliseconds to a readable format

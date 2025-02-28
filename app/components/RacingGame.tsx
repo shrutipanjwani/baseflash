@@ -13,7 +13,8 @@ import {
   regularClient
 } from '@/utils/blockchainUtils';
 import { baseSepolia } from 'viem/chains';
-import html2canvas from 'html2canvas';
+import { BlockDashboard } from './BlockDashboard';
+import Image from 'next/image';
 
 export const RacingGame = () => {
   const { ready, authenticated, user, logout, login } = usePrivy();
@@ -44,7 +45,6 @@ export const RacingGame = () => {
     flashIncluded: boolean;
   } | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isGeneratingShare, setIsGeneratingShare] = useState(false);
   const [isPendingTx, setIsPendingTx] = useState(false);
 
   // Refs for cleanup
@@ -154,70 +154,6 @@ export const RacingGame = () => {
     );
   }
 
-  // Generate and share results as an image
-  const shareResults = async () => {
-    if (!resultsRef.current) return;
-    
-    setIsGeneratingShare(true);
-    
-    try {
-      // Create a canvas from the results section
-      const canvas = await html2canvas(resultsRef.current, {
-        backgroundColor: '#FFFFFF',
-        scale: 2, // Higher quality
-        logging: false
-      });
-      
-      // Convert canvas to blob
-      const blob = await new Promise<Blob>((resolve) => {
-        canvas.toBlob((blob) => {
-          resolve(blob!);
-        }, 'image/png');
-      });
-      
-      // Create file from blob
-      const file = new File([blob], 'flashblocks-race.png', { type: 'image/png' });
-      
-      // Share text
-      const shareText = results?.flashIncluded
-        ? `I just raced Base Flashblocks (${formatTime(results.flashTime)}) vs Regular Blocks (${formatTime(results.regularTime)}) and Flashblocks won by ${formatTime(results.diff)}! That's ${(results.regularTime / results.flashTime).toFixed(1)}x faster! #baseflash`
-        : `I just tried Base Flashblocks! Not all transactions get included in Flashblocks, but when they do, they're ~10x faster than regular blocks. #baseflash`;
-      
-      // Use Web Share API if available
-      if (navigator.share) {
-        await navigator.share({
-          text: shareText,
-          files: [file],
-          url: 'https://base.org/flashblocks'
-        });
-      } else {
-        // Fallback for browsers that don't support sharing files
-        const url = URL.createObjectURL(blob);
-        
-        // Open in new window
-        const win = window.open();
-        if (win) {
-          win.document.write(`
-            <html>
-              <head>
-                <title>Base Flashblocks Race Results</title>
-              </head>
-              <body style="margin: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; background: #f5f5f5; padding: 20px;">
-                <p style="font-family: system-ui, sans-serif; margin-bottom: 20px; text-align: center;">${shareText}</p>
-                <img src="${url}" style="max-width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);" />
-                <p style="font-family: system-ui, sans-serif; margin-top: 20px;">Right-click the image to save it, or copy the text above to share!</p>
-              </body>
-            </html>
-          `);
-        }
-      }
-    } catch (error) {
-      console.error('Error sharing results:', error);
-      alert('There was an error generating the share image. Try again or take a screenshot instead.');
-    } finally {
-      setIsGeneratingShare(false);
-    }
-  };
 
   // Send transaction and start race tracking
   const handleRaceStart = async () => {
@@ -460,7 +396,7 @@ export const RacingGame = () => {
 
   return (
     <div className="min-h-screen p-4 bg-white text-gray-900">
-      <div className="w-full max-w-5xl mx-auto space-y-6 md:space-y-8">
+      <div className="w-full max-w-7xl mx-auto space-y-6 md:space-y-8">
         {/* Header with race image */}
         <div className="flex flex-col items-center">
           {authenticated && (
@@ -479,19 +415,22 @@ export const RacingGame = () => {
             </div>
           )}
           
-          <div className="w-full max-w-2xl mb-4">
-            <img 
+          <div className="w-full max-w-5xl mb-4">
+            <Image
+              width={1000}
+              height={1000}
               src="/images/race-banner.png" 
               alt="Blue vs Red Car Race" 
-              className="w-full h-auto rounded-lg shadow-sm"
+              className="w-full h-auto"
+              unoptimized
             />
           </div>
           
           <h1 className="text-4xl md:text-5xl font-bold text-center mb-2">
-            <span className="text-blue-500">Flash</span> vs <span className="text-red-500">Regular Block</span> <span className="text-gray-800">Race</span>
+            <span className="text-blue-400">Flash</span> vs <span className="text-red-400">Regular Block</span> <span className="text-gray-800">Race</span>
           </h1>
           <p className="text-sm md:text-base text-center text-gray-600 max-w-3xl">
-            Experience the <span className="font-bold text-blue-600">10x speed improvement</span> of 
+            Experience the <span className="font-bold text-blue-400">10x speed improvement</span> of 
             Flashblocks (200ms) vs regular blocks (2s) on Base Sepolia
           </p>
         </div>
@@ -526,7 +465,7 @@ export const RacingGame = () => {
         )}
 
         {/* Race track */}
-        <div className="relative rounded-xl max-w-4xl mx-auto">
+        <div className="relative rounded-xl max-w-7xl mx-auto">
           <RaceTrack
             flashPosition={carPositions.flash}
             regularPosition={carPositions.regular}
@@ -537,7 +476,7 @@ export const RacingGame = () => {
 
         {/* Transaction information */}
         {txHash && (
-          <div className="bg-white rounded-lg p-4 border border-gray-200 shadow-sm max-w-3xl mx-auto">
+          <div className="bg-white rounded-lg p-4 border border-gray-200 max-w-3xl mx-auto">
             <div className="mt-2 grid grid-cols-2 gap-4">
               <span className="text-gray-600 font-medium">Transaction:</span>
               <a 
@@ -553,7 +492,7 @@ export const RacingGame = () => {
             <div className="mt-2 grid grid-cols-2 gap-4">
               <div className="flex items-center">
                 <div className={`h-3 w-3 rounded-full mr-2 ${
-                  txData.flashConfirmedAt > 0 ? 'bg-green-500' : 
+                  txData.flashConfirmedAt > 0 ? 'bg-green-400' : 
                   txData.flashConfirmedAt === -1 ? 'bg-yellow-500' : 
                   'bg-blue-500 animate-pulse'
                 }`}></div>
@@ -587,46 +526,22 @@ export const RacingGame = () => {
               <>
                 <div className="grid grid-cols-2 gap-6 text-center">
                   <div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
-                    <p className="text-2xl font-bold text-blue-600">Flashblock</p>
+                    <p className="text-2xl font-bold text-blue-500">Flashblock</p>
                     <p className="text-3xl font-mono text-gray-800 mt-2">{formatTime(results.flashTime)}</p>
                   </div>
                   <div className="p-4 rounded-lg border border-red-200 bg-red-50">
-                    <p className="text-2xl font-bold text-red-600">Regular Block</p>
+                    <p className="text-2xl font-bold text-red-500">Regular Block</p>
                     <p className="text-3xl font-mono text-gray-800 mt-2">{formatTime(results.regularTime)}</p>
                   </div>
                 </div>
-                <p className="text-2xl mt-8 text-center text-green-600 font-bold">
+                <p className="text-2xl mt-8 text-center text-green-400 font-bold">
                   Flashblock won by {formatTime(results.diff)}!
                 </p>
-                <p className="text-lg mt-2 text-center text-blue-600">
-                  That&apos;s {(results.regularTime / results.flashTime).toFixed(1)}x faster!
+                <p className="text-lg mt-2 text-center text-blue-400">
+                  That&apos;s {(results.regularTime / results.flashTime).toFixed(1)}x faster
                 </p>
+               
                 
-                {/* Share button */}
-                <div className="mt-8 flex justify-center">
-                  <button
-                    onClick={shareResults}
-                    disabled={isGeneratingShare}
-                    className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {isGeneratingShare ? (
-                      <>
-                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
-                        </svg>
-                        Share Result
-                      </>
-                    )}
-                  </button>
-                </div>
               </>
             ) : (
               <>
@@ -647,28 +562,24 @@ export const RacingGame = () => {
                   Try again to see if your next transaction gets included in a Flashblock!
                 </p>
                 
-                {/* Share button for not included case */}
-                <div className="mt-8 flex justify-center">
-                  <button
-                    onClick={shareResults}
-                    disabled={isGeneratingShare}
-                    className="flex items-center gap-2 bg-blue-500 text-white px-6 py-3 rounded-lg shadow-md hover:bg-blue-600 transition-all cursor-pointer disabled:opacity-50"
-                  >
-                    {isGeneratingShare ? 'Generating...' : 'Share My Experience'}
-                  </button>
-                </div>
+                
               </>
             )}
           </div>
         )}
 
-        {/* Footer */}
-        <footer className="text-center text-gray-600 text-sm py-8">
+       
+
+        {/* Block Dashboard */}
+        <BlockDashboard />
+
+         {/* Footer */}
+         <footer className="text-center text-gray-600 text-sm py-8">
           <a 
             href="https://base.org/flashblocks" 
             target="_blank" 
             rel="noopener noreferrer"
-            className="text-blue-600 font-medium hover:text-blue-700 transition-colors"
+            className="font-medium hover:text-blue-700 transition-colors"
           >
             Learn more about Base Flashblocks →
           </a>

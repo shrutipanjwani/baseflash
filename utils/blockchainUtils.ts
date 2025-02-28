@@ -40,22 +40,22 @@ export const createFlashblockWsClient = () => {
 
 // Calculate speed based on position and confirmation time
 export const calculateSpeed = (position: number, confirmationTime: number): number => {
-    // Fixed speed values that look more realistic
-    // For a car that has reached 100% of the track
-    if (position >= 95) {
-      return confirmationTime === 200 ? 950 : 100; // Flashblock: 950 mph, Regular: 100 mph
-    }
-    
-    // For cars still on the track
-    const baseSpeed = confirmationTime === 200 ? 800 : 80; // Base speeds
-    return baseSpeed * (position / 100) + 50; // Scale by position with a minimum
-  };
+  // Fixed speed values that look more realistic
+  // For a car that has reached the finish line
+  if (position >= 95) {
+    return confirmationTime === 200 ? 200 : 100; // Flashblock: 200 mph, Regular: 100 mph
+  }
+  
+  // For cars still on the track, scale the speed based on position
+  const baseSpeed = confirmationTime === 200 ? 180 : 90; // Base speeds
+  return baseSpeed * (position / 100) + 20; // Scale with a minimum value
+};
 
-  // Convert milliseconds to a readable format
+// Convert milliseconds to a readable format
 export const formatTime = (ms: number): string => {
-    if (ms < 1000) {
-      return `${ms}ms`;
-    }
-    
-    return `${(ms / 1000).toFixed(2)}s`;
-  };
+  if (ms < 1000) {
+    return `${ms}ms`;
+  }
+  
+  return `${(ms / 1000).toFixed(2)}s`;
+};

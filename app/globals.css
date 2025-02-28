@@ -13,11 +13,17 @@
   --foreground: #ffffff;
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: light) {
   :root {
     --background: #0a0a0a;
-    --foreground: #ededed;
+    --foreground: #ffffff;
   }
+}
+
+@font-face {
+  font-family: "PolySans Neutral";
+  src: url("/fonts/PolySans-Neutral.woff") format("opentype");
+  font-display: swap;
 }
 
 body {
@@ -26,8 +32,10 @@ body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: 'Inter', sans-serif;
+  overscroll-behavior: none;
+  font-family: "PolySans Neutral";
 }
+
 
 .car {
   position: absolute;

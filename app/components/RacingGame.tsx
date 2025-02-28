@@ -518,29 +518,28 @@ export const RacingGame = () => {
         {results && (
           <div 
             ref={resultsRef}
-            className="bg-white rounded-xl p-6 shadow-md border border-gray-200 max-w-3xl mx-auto"
+            className="bg-white rounded-xl p-6 max-w-7xl mx-auto"
           >
-            <h2 className="text-3xl font-bold mb-6 text-center text-gray-800">🏆 Race Results</h2>
+            <h2 className="text-lg md:text-2xl font-bold mb-6 text-left text-gray-600">🏆 Race Results</h2>
             
             {results.flashIncluded ? (
               <>
                 <div className="grid grid-cols-2 gap-6 text-center">
-                  <div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
-                    <p className="text-2xl font-bold text-blue-500">Flashblock</p>
-                    <p className="text-3xl font-mono text-gray-800 mt-2">{formatTime(results.flashTime)}</p>
+                  <div className="p-4 rounded-lg border border-blue-100 bg-blue-50">
+                    <p className="text-lg md:text-2xl font-bold text-blue-400">Flashblock</p>
+                    <p className="text-xl md:text-3xl font-mono text-gray-700 mt-2">{formatTime(results.flashTime)}</p>
                   </div>
-                  <div className="p-4 rounded-lg border border-red-200 bg-red-50">
-                    <p className="text-2xl font-bold text-red-500">Regular Block</p>
-                    <p className="text-3xl font-mono text-gray-800 mt-2">{formatTime(results.regularTime)}</p>
+                  <div className="p-4 rounded-lg border border-red-100 bg-red-50">
+                    <p className="text-lg md:text-2xl font-bold text-red-400">Regular Block</p>
+                    <p className="text-xl md:text-3xl font-mono text-gray-700 mt-2">{formatTime(results.regularTime)}</p>
                   </div>
                 </div>
-                <p className="text-2xl mt-8 text-center text-green-400 font-bold">
-                  Flashblock won by {formatTime(results.diff)}!
+                <p className="text-lg md:text-2xl mt-8 text-center font-semibold text-gray-800">
+                  Flashblock won by {formatTime(results.diff)}
                 </p>
-                <p className="text-lg mt-2 text-center text-blue-400">
-                  That&apos;s {(results.regularTime / results.flashTime).toFixed(1)}x faster
+                <p className="text-md md:text-lg mt-2 text-center text-gray-600">
+                  That&apos;s {(results.regularTime / results.flashTime).toFixed(1)}x faster!
                 </p>
-               
                 
               </>
             ) : (

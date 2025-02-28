@@ -16,6 +16,7 @@ import { baseSepolia } from 'viem/chains';
 export const RacingGame = () => {
   const { ready, authenticated, user, logout, login } = usePrivy();
   const { data: walletClient } = useWalletClient({ chainId: baseSepolia.id });
+  const [demoMode, setDemoMode] = useState(false);
   const { sendTransactionAsync } = useSendTransaction();
 
   // State variables
@@ -147,13 +148,39 @@ useEffect(() => {
   }
 
   // Start the race by sending a transaction
-  const startRace = async () => {
-    if (!authenticated || !walletClient) {
-      setError("Please connect your wallet first");
-      return;
-    }
+  const startRace = async (useDemo = false) => {
+    if (useDemo) {
+        setDemoMode(true);
+        
+        // Reset everything
+        setResults(null);
+        setError(null);
+        setTxHash("0xDemoTransaction123456789");
+        
+        // Reset positions and data
+        setCarPositions({ flash: 0, regular: 0 });
+        
+        const submittedAt = Date.now();
+        
+        // In demo mode, set predictable timestamps
+        setTxData({
+          submittedAt,
+          // Flashblock confirms in ~200ms
+          flashConfirmedAt: submittedAt + 200,
+          // Regular block confirms in ~2s
+          regularConfirmedAt: submittedAt + 2000
+        });
+        
+        setIsRacing(true);
+      } else {
+        setDemoMode(false);
+    
+        if (!authenticated || !walletClient) {
+        setError("Please connect your wallet first");
+        return;
+        }
 
-    try {
+        try {
       
       setResults(null);
       setError(null);
@@ -194,6 +221,7 @@ useEffect(() => {
       setError(`Error: ${error instanceof Error ? error.message : String(error)}`);
       setIsRacing(false);
     }
+}
   };
 
   // Set up WebSocket to listen for Flashblock confirmations
@@ -224,40 +252,37 @@ useEffect(() => {
             flashConfirmedAt: -1 
           }));
         }
-      }, 10000); // 10 second timeout
+      }, 20000); // 20 second timeout
   
       ws.onopen = () => {
-        console.log("WebSocket connection established");
+        console.log("WebSocket connection established at", new Date().toISOString());
       };
       
       ws.onmessage = async (event) => {
         try {
           const text = await event.data.text();
-          let json;
+          const json = JSON.parse(text);
           
-          try {
-            json = JSON.parse(text);
-          } catch (parseError) {
-            console.error("Error parsing WebSocket message:", parseError);
-            return;
-          }
-          
-          // Log metadata for debugging
-          if (json && json.metadata) {
-            console.log(`Received block ${json.metadata.block_number}, index ${json.index}`);
-          }
-          
-          // Check if metadata and receipts exist
           if (json && json.metadata && json.metadata.receipts) {
             const receipts = json.metadata.receipts;
             
-            // Log receipt keys
-            console.log("Receipt keys:", Object.keys(receipts));
-            
-            // Check if our transaction hash is in the receipts
             if (txHash in receipts) {
               console.log(`Found our transaction ${txHash} in Flashblock!`);
-              setTxData(prev => ({ ...prev, flashConfirmedAt: Date.now() }));
+              
+              // Calculate time based on block data if available, not when we received the message
+              if (json.diff && json.diff.timestamp) {
+                // Convert hex timestamp to number and multiply by 1000 for milliseconds
+                const blockTimestamp = parseInt(json.diff.timestamp, 16) * 1000;
+                
+                // Use the block timestamp instead of current time
+                setTxData(prev => ({ 
+                  ...prev, 
+                  flashConfirmedAt: blockTimestamp || Date.now() 
+                }));
+              } else {
+                // Fallback to current time if block timestamp unavailable
+                setTxData(prev => ({ ...prev, flashConfirmedAt: Date.now() }));
+              }
               
               // Clear timeout and close WebSocket
               clearTimeout(timeoutId);
@@ -275,7 +300,7 @@ useEffect(() => {
       };
       
       ws.onclose = () => {
-        console.log("WebSocket connection closed");
+        console.log("WebSocket connection closed at", new Date().toISOString());
         clearTimeout(timeoutId);
       };
       
@@ -294,10 +319,22 @@ useEffect(() => {
       });
       
       if (receipt) {
-        console.log("Transaction confirmed in Flashblock via RPC:", receipt);
-        setTxData(prev => ({ ...prev, flashConfirmedAt: Date.now() }));
-        return true;
-      }
+       // Get the block to extract the timestamp
+      const block = await flashblockClient.getBlock({
+        blockNumber: receipt.blockNumber
+      });
+      
+      // Use the block timestamp instead of current time
+      // Convert to milliseconds (blockchain timestamps are in seconds)
+      const blockTimestamp = Number(block.timestamp) * 1000;
+      
+      setTxData(prev => ({ 
+        ...prev, 
+        flashConfirmedAt: blockTimestamp
+      }));
+      
+      return true;
+    }
     } catch (error) {
       console.log("Transaction not yet in Flashblock via RPC check:", error);
     }
@@ -381,23 +418,24 @@ useEffect(() => {
             </button>
           ) : (
             <div className="flex gap-4 items-center">
-              <span className="text-gray-400 text-sm">
-                Connected: {user?.wallet?.address?.slice(0, 6)}...{user?.wallet?.address?.slice(-4)}
-              </span>
-              <button
-                onClick={startRace}
-                disabled={isRacing}
-                className="bg-gradient-to-r from-green-600 to-green-800 text-white font-bold py-3 px-6 rounded-lg hover:from-green-700 hover:to-green-900 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all"
-              >
-                {isRacing ? '🏁 Race in Progress...' : '🚦 Start Race'}
-              </button>
-              <button
-                onClick={logout}
-                className="text-gray-400 hover:text-gray-300 font-medium"
-              >
-                Disconnect
-              </button>
-            </div>
+  <span className="text-gray-400 text-sm">
+    Connected: {user?.wallet?.address?.slice(0, 6)}...{user?.wallet?.address?.slice(-4)}
+  </span>
+  <button
+    onClick={() => startRace(false)}
+    disabled={isRacing}
+    className="bg-gradient-to-r from-green-600 to-green-800 text-white font-bold py-3 px-6 rounded-lg hover:from-green-700 hover:to-green-900 disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105 transition-all"
+  >
+    {isRacing ? '🏁 Race in Progress...' : '🚦 Start Race'}
+  </button>
+  
+  <button
+    onClick={logout}
+    className="text-gray-400 hover:text-gray-300 font-medium"
+  >
+    Disconnect
+  </button>
+</div>
           )}
         </div>
 
@@ -423,14 +461,16 @@ useEffect(() => {
           <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
             <div className="flex items-center justify-between">
               <span className="text-gray-300">Transaction:</span>
-              <a 
-                href={`https://sepolia.basescan.org/tx/${txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-400 hover:text-blue-300 underline text-sm"
-              >
-                {txHash.slice(0, 10)}...{txHash.slice(-8)} 🔗
-              </a>
+              {!demoMode && (
+                <a 
+                  href={`https://sepolia.basescan.org/tx/${txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:text-blue-300 underline text-sm"
+                >
+                  {txHash.slice(0, 10)}...{txHash.slice(-8)} 🔗
+                </a>
+              )}
             </div>
 
             <div className="mt-2 grid grid-cols-2 gap-4">

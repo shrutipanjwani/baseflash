@@ -3,43 +3,76 @@
 interface RaceTrackProps {
   flashPosition: number;
   regularPosition: number;
+  flashSpeed: number;
+  regularSpeed: number;
 }
 
-export const RaceTrack = ({ flashPosition, regularPosition }: RaceTrackProps) => {
+export const RaceTrack = ({ 
+  flashPosition, 
+  regularPosition, 
+  flashSpeed,
+  regularSpeed 
+}: RaceTrackProps) => {
   return (
-    <div className="w-full h-[400px] relative">
-      <svg className="w-full h-full" viewBox="0 0 150 150" fill="none">
-        <defs>
-          <path id="track" d="M0,0c37-33,89-44,125-36s46,36,46,66s36,62,55,71c21,10,40,20,70,9s57-8,69,4c13,13,10,50-13,70c-20,17-43,60-46,92c-3,37-34,89-114,84c-87-5-99-89-95-117s25-97-7-130s-72-7-98-23S-32,28,0,0z"/>
-        </defs>
-
-        <g>
-          {/* Track base */}
-          <use href="#track" stroke="#C2B280" strokeWidth="45" />
-          <use href="#track" stroke="#111" strokeWidth="29" />
-          <use href="#track" stroke="#fff" strokeDasharray="3.5 7.1" />
+    <div className="w-full h-[200px] relative bg-gray-900 rounded-xl overflow-hidden">
+      {/* Track */}
+      <div className="absolute inset-0 flex flex-col justify-center">
+        <div className="h-32 bg-gray-800 relative">
+          {/* Track markings */}
+          <div className="absolute inset-0 border-t-2 border-b-2 border-gray-700">
+            <div className="h-full flex items-center">
+              <div className="w-full h-[1px] border-t-2 border-dashed border-gray-500"></div>
+            </div>
+          </div>
           
-          {/* Flash car */}
-          <g style={{ transform: `translateX(${flashPosition}%)` }}>
-            <circle cx="20" cy="20" r="8" fill="#FFD700" />
-            <text x="20" y="23" textAnchor="middle" fill="#000" fontSize="12">⚡</text>
-          </g>
-
-          {/* Regular car */}
-          <g style={{ transform: `translateX(${regularPosition}%)` }}>
-            <circle cx="20" cy="40" r="8" fill="#4299E1" />
-            <text x="20" y="43" textAnchor="middle" fill="#000" fontSize="12">🚗</text>
-          </g>
-        </g>
-      </svg>
-
-      {/* Speed indicators */}
-      <div className="absolute bottom-4 left-4 bg-black/70 rounded-full p-4">
-        <div className="text-2xl font-bold">⚡ {(flashPosition * 2).toFixed(0)} mph</div>
+          {/* Start line */}
+          <div className="absolute left-0 top-0 bottom-0 w-2 bg-white"></div>
+          
+          {/* Finish line - checkered pattern */}
+          <div className="absolute right-0 top-0 bottom-0 w-4 flex items-center justify-center" 
+               style={{ 
+                 backgroundImage: 'repeating-linear-gradient(45deg, #000 0, #000 10px, #fff 10px, #fff 20px)',
+                 backgroundSize: '20px 20px'
+               }}>
+          </div>
+          
+          {/* Flash car (blue) */}
+          <div 
+            className="absolute top-1/4 transform -translate-y-1/2 z-10 transition-all duration-300 ease-linear"
+            style={{ left: `${flashPosition}%` }}
+          >
+            <div className="flex items-center justify-center bg-blue-500 h-10 w-12 rounded-lg shadow-md">
+              <span className="text-white text-lg">⚡</span>
+            </div>
+          </div>
+          
+          {/* Regular car (red) */}
+          <div 
+            className="absolute top-3/4 transform -translate-y-1/2 z-10 transition-all duration-300 ease-linear"
+            style={{ left: `${regularPosition}%` }}
+          >
+            <div className="flex items-center justify-center bg-red-500 h-10 w-12 rounded-lg shadow-md">
+              <span className="text-white text-lg">🚗</span>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="absolute bottom-4 right-4 bg-black/70 rounded-full p-4">
-        <div className="text-2xl font-bold">🚗 {(regularPosition * 2).toFixed(0)} mph</div>
+      
+      {/* Speed indicators */}
+      <div className="absolute top-4 left-4 bg-black/70 rounded-lg px-3 py-1">
+        <div className="text-base font-bold text-blue-400">⚡ {flashSpeed.toFixed(0)} mph</div>
+      </div>
+      <div className="absolute top-4 right-4 bg-black/70 rounded-lg px-3 py-1">
+        <div className="text-base font-bold text-red-400">🚗 {regularSpeed.toFixed(0)} mph</div>
+      </div>
+      
+      {/* Lane labels */}
+      <div className="absolute bottom-4 left-4 text-sm text-blue-400">
+        Flashblock Lane (200ms)
+      </div>
+      <div className="absolute bottom-4 right-4 text-sm text-red-400">
+        Regular Block Lane (2s)
       </div>
     </div>
   );
-}; 
+};

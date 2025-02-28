@@ -29,17 +29,6 @@ body {
   font-family: 'Inter', sans-serif;
 }
 
-.racing-track {
-  background: url("https://raw.githubusercontent.com/replyre/racing-game/refs/heads/main/Screenshot%202025-01-18%20004808.png");
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: center;
-  width: 100%;
-  aspect-ratio: 20/9;
-  position: relative;
-  overflow: hidden;
-}
-
 .car {
   position: absolute;
   width: 60px;
